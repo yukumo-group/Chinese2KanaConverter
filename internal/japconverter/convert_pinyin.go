@@ -4,7 +4,7 @@ import (
 	"github.com/yukumo-group/Chinese2KanaConverter/internal/table"
 )
 
-// ToKanaByInitialsAndFinals
+// ToKanaByInitialsAndFinals converts chinese to kana through matching of initials and finals
 func ToKanaByInitialsAndFinals(
 	text string,
 ) string {
