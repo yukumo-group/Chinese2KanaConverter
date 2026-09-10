@@ -18,7 +18,7 @@ func SingleChinesePieceToKana(
 	for _, chunk := range chunks {
 		if chunk.IsChinese {
 			pinyins := cpyconverter.ToPinyin(
-				chineseText,
+				chunk.Text,
 				useHeteronym,
 			)
 			kanas, err := japconverter.ToKana(
@@ -30,7 +30,7 @@ func SingleChinesePieceToKana(
 			result += kanas
 		} else {
 			result += japconverter.OthersToKana(
-				chineseText,
+				chunk.Text,
 			)
 		}
 	}
