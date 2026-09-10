@@ -1,7 +1,11 @@
+github.com/Luigi-Pizzolito/English2KanaTransliteration v1.0.4 h1:IzmZUthpnKCGlKL2SFheeWzkGCqqQjJL8gFHWPfw9LA=
+github.com/Luigi-Pizzolito/English2KanaTransliteration v1.0.4/go.mod h1:ZQ7p4kVLY6hl6I6TKYkJ4lSOpehd5CFd9GxcLrd+8kQ=
 github.com/go-ego/gpy v0.42.1 h1:P/doarxZi2J5qwNzLIM0ESd3VXLXMpdhwO/GNontLdE=
 github.com/go-ego/gpy v0.42.1/go.mod h1:eBtY3/uCDqBFog4ES9L00xytTpXar/0mGf45Rb7zcgg=
 github.com/go-ego/gse v1.0.2 h1:+27lYFPhQEhA9igtdOsJPRKYL/k3TwYsxBF5jr6KFv4=
 github.com/go-ego/gse v1.0.2/go.mod h1:Fy35G+q7VV7Et1zIKO8o/sW1kkugV3znXap/lF/11zc=
+github.com/gojp/kana v0.1.0 h1:8bd0WXAObhYpyFA3pF17YImnYyVshw0bcXS+ybNFYQk=
+github.com/gojp/kana v0.1.0/go.mod h1:kWp5hDdJQqnZ2E3SQNQe+iejY63SZ+JdlbnW+qn7vxY=
 github.com/vcaesar/cedar v0.30.0 h1:9fSDpM7FTjjUdPiBUUa0MWYMRGSEcqgFXvppZcZ4d7Y=
 github.com/vcaesar/cedar v0.30.0/go.mod h1:lyuGvALuZZDPNXwpzv/9LyxW+8Y6faN7zauFezNsnik=
 github.com/vcaesar/tt v0.20.1 h1:D/jUeeVCNbq3ad8M7hhtB3J9x5RZ6I1n1eZ0BJp7M+4=

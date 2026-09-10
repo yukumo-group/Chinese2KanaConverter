@@ -12,14 +12,14 @@ import (
 // Manager manages polyphonic phrases
 type Manager struct {
 	sync.RWMutex
-	heteronym      map[string]string
+	Heteronym      map[string]string `json:"heteronym"`
 	targetFilePath string
 }
 
 // NewManager creates new manager
 func NewManager() *Manager {
 	return &Manager{
-		heteronym:      make(map[string]string),
+		Heteronym:      make(map[string]string),
 		targetFilePath: "polyphonic.json",
 	}
 }
@@ -28,26 +28,73 @@ func NewManager() *Manager {
 func NewManagerFromFile(
 	targetFilePath string,
 ) (*Manager, error) {
-	newManager := Manager{}
+	var newManager *Manager
 	data, err := os.ReadFile(targetFilePath)
 	if err != nil {
 		return nil, err
 	}
 	err = json.Unmarshal(data, &newManager)
-	return &newManager, err
+	return newManager, err
+}
+
+// SetTargetFile sets target file for storing polyphonics
+func (manager *Manager) SetTargetFile(
+	targetFilePath string,
+) {
+	manager.Lock()
+	defer manager.Unlock()
+	manager.targetFilePath = targetFilePath
+}
+
+// Save saves the file
+func (manager *Manager) Save() error {
+	manager.Lock()
+	defer manager.Unlock()
+	data, err := json.Marshal(
+		manager,
+	)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(
+		manager.targetFilePath,
+		data,
+		0644,
+	)
+	return err
 }
 
 // load loads the heteronyms.
 // **Unlocked!**
 func (manager *Manager) load() {
 	cpyconverter.DumpHeteronymMap(
-		maps.Clone(manager.heteronym),
+		maps.Clone(manager.Heteronym),
 	)
 }
 
 // Initialize initializes the manager
 func (manager *Manager) Initialize() {
+	manager.Lock()
+	defer manager.Unlock()
+	manager.load()
+}
+
+// AddPolyphonic adds new polyphonic.
+// e.g. "都会区" and "dū huì qū"
+func (manager *Manager) AddPolyphonic(
+	chinese string,
+	pinyin string,
+) {
+	manager.Lock()
+	defer manager.Unlock()
+	manager.Heteronym[chinese] = pinyin
+	manager.load()
+}
+
+// GetData gets polyphonic map
+func (manager *Manager) GetData() map[string]string {
 	manager.RLock()
 	defer manager.RUnlock()
-	manager.load()
+	result := maps.Clone(manager.Heteronym)
+	return result
 }

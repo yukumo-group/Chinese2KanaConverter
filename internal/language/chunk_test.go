@@ -6,7 +6,7 @@ import (
 	"github.com/yukumo-group/Chinese2KanaConverter/internal/process"
 )
 
-const testParagraph string = "abbccdd一一四五一四114514abcdabcd四四八八七七"
+const testParagraph string = "abbccdd，,一一四五一四114514abcdabcd四四八八七七"
 
 // TestChunk tests the chunking
 func TestChunk(t *testing.T) {
