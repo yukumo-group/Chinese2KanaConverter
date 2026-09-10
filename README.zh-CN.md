@@ -1,8 +1,8 @@
-# Chinese2KoeConverter
+# Chinese2KanaConverter
 
 [English](./README.md) | **简体中文**
 
-[![Go Test Workflow](https://github.com/yukumo-group/Chinese2KoeConverter/actions/workflows/test.yaml/badge.svg)](https://github.com/yukumo-group/Chinese2KoeConverter/actions/workflows/test.yaml)
+[![Go Test Workflow](https://github.com/yukumo-group/Chinese2KanaConverter/actions/workflows/test.yaml/badge.svg)](https://github.com/yukumo-group/Chinese2KanaConverter/actions/workflows/test.yaml)
 [![Go Version](https://img.shields.io/badge/go-1.25.0-00ADD8.svg)](https://go.dev/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/yukumo-group/Chinese2KanaConverter.svg)](https://pkg.go.dev/github.com/yukumo-group/Chinese2KanaConverter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
