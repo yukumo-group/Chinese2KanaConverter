@@ -34,7 +34,11 @@ func NewManagerFromFile(
 		return nil, err
 	}
 	err = json.Unmarshal(data, &newManager)
-	return newManager, err
+	if err != nil {
+		return nil, err
+	}
+	newManager.targetFilePath = targetFilePath
+	return newManager, nil
 }
 
 // SetTargetFile sets target file for storing polyphonics

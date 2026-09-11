@@ -74,8 +74,7 @@ SeparateToChunks ......... split into Chinese / non-Chinese runs
 
 ## Installation
 
-The Go module path is `github.com/yukumo-group/Chinese2KanaConverter` (the repository is
-named `Chinese2KoeConverter`).
+The Go module and the repository are both `github.com/yukumo-group/Chinese2KanaConverter`.
 
 ```bash
 go get github.com/yukumo-group/Chinese2KanaConverter
@@ -318,8 +317,8 @@ Packages under `internal/` are implementation details and are not part of the pu
 Clone the repository and run the test suite:
 
 ```bash
-git clone https://github.com/yukumo-group/Chinese2KoeConverter.git
-cd Chinese2KoeConverter
+git clone https://github.com/yukumo-group/Chinese2KanaConverter.git
+cd Chinese2KanaConverter
 go mod download
 go test ./...
 ```

@@ -65,8 +65,7 @@ SeparateToChunks ......... 切分为「中文 / 非中文」文本块
 
 ## 安装
 
-Go module 路径为 `github.com/yukumo-group/Chinese2KanaConverter`（仓库名为
-`Chinese2KoeConverter`）。
+Go module 与仓库名均为 `github.com/yukumo-group/Chinese2KanaConverter`。
 
 ```bash
 go get github.com/yukumo-group/Chinese2KanaConverter
@@ -300,8 +299,8 @@ func main() {
 克隆仓库并运行测试：
 
 ```bash
-git clone https://github.com/yukumo-group/Chinese2KoeConverter.git
-cd Chinese2KoeConverter
+git clone https://github.com/yukumo-group/Chinese2KanaConverter.git
+cd Chinese2KanaConverter
 go mod download
 go test ./...
 ```
