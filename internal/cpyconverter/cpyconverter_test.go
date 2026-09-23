@@ -8,6 +8,12 @@ import (
 // TestDumpHeteronymDict tests the dumping of heteronym dict
 func TestDumpHeteronymDict(t *testing.T) {
 	t.Parallel()
+	err := InitGSEDict(
+		"./testdata/dict.txt",
+	)
+	if err != nil {
+		t.Error(err)
+	}
 	data := map[string]string{
 		"都会区": "dū huì qū",
 	}
