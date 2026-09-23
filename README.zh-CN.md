@@ -32,6 +32,8 @@ Hello!               ->  ヘロー！
   [English2KanaTransliteration](https://github.com/Luigi-Pizzolito/English2KanaTransliteration) 音译。
 - **多音字（异读词）**：可为读音不规则的词（如 `都会区`）登记自定义拼音，既支持直接传入
   `map[string]string`，也支持通过 `Manager` 读写 JSON 文件。
+- **自定义 gse 词典**：加载你自己的 [gse](https://github.com/go-ego/gse) 词典，让分词器
+  认识你语料中特有的词。
 - **并发安全**的字典加载与 `Manager` 访问。
 
 ## 工作原理
@@ -53,7 +55,8 @@ SeparateToChunks ......... 切分为「中文 / 非中文」文本块
 1. `language.SeparateToChunks` 逐个字符扫描，把满足 `^[\u4e00-\u9fa5\u3007]+$`（全中文）
    或全非中文的连续片段分组为块。
 2. 每个中文块用 `cpyconverter.ToPinyin` 转成拼音。由于声调不影响假名输出，声调会被去除；
-   用户登记的多音字词典会先合并进 `gpy` 的短语词典。
+   用户登记的多音字词典会先合并进 `gpy` 的短语词典；还可选地加载
+   [自定义 gse 词典](#自定义-gse-词典)来影响分词结果。
 3. 每个拼音音节在 `table.PinyinToJapMap` 中查表。若查不到，则改用 `table.InitialToKana`
    与 `table.FinalToKana` 匹配（优先匹配更长的韵母，见 `table.SortStringSlice`）。
 4. 每个非中文块交给 `japconverter.OthersToKana`。
@@ -203,6 +206,33 @@ func main() {
 > **说明：** `Manager` 内嵌了 `sync.RWMutex`，因此 `NewManager`、`NewManagerFromFile`、
 > `GetData` 等方法可安全地并发调用。
 
+## 自定义 gse 词典
+
+短语级拼音由 `go-ego/gpy` 在文本经过 [gse](https://github.com/go-ego/gse) **分词**之后决定。
+你可以加载自己的 gse 词典，让分词器认识你语料中特有的词：
+
+```go
+import "github.com/yukumo-group/Chinese2KanaConverter/pkg/converter"
+
+// 可传入一个或多个 gse 词典文件。
+if err := converter.InitGSEDict("my-dict.txt"); err != nil {
+	panic(err)
+}
+```
+
+词典文件每行是一条 gse 词条：`词 词频 [词性]`。仓库自带的示例
+`internal/cpyconverter/testdata/dict.txt` 只有一条：
+
+```
+都会区 100 n
+```
+
+需要注意：
+
+- 该词典只影响**分词**。被切分出来的词，其拼音仍需 `gpy` 已知——来自它内置的短语词典，或来自
+  已登记的[多音字](#多音字异读词)。否则该词会退化为逐字读音。
+- `InitGSEDict` 支持一次传入多个文件，因此可以一次性加载基础词典和你自己的词典。
+
 ## 发音模型
 
 输出是"用日语音系去**近似**中文"，而非精确转写。以下简化是刻意的，直接来自
@@ -265,6 +295,7 @@ func main() {
 | 包 | 符号 | 说明 |
 | --- | --- | --- |
 | `pkg/converter` | `SingleChinesePieceToKana(chineseText string, useHeteronym bool) (string, error)` | 将一段文本转换为假名，主入口。 |
+| `pkg/converter` | `InitGSEDict(paths ...string) error` | 加载一个或多个自定义 gse 词典文件，用于分词。 |
 | `pkg/polyphonic` | `LoadPolyphonics(map[string]string)` | 向转换器登记一个多音字词典。 |
 | `pkg/polyphonic` | `SafeLoadPolyphonics(map[string]string)` | 同上，但带互斥锁，供并发调用者使用。 |
 | `pkg/polyphonic` | `NewManager() *Manager` | 创建一个内存版多音字管理器。 |
@@ -284,7 +315,7 @@ func main() {
 ├── go.mod                     # module github.com/yukumo-group/Chinese2KanaConverter
 ├── .goreleaser.yml            # GoReleaser 发布配置
 ├── internal/
-│   ├── cpyconverter/          # 中文 -> 拼音（go-ego/gpy）+ 多音字词典
+│   ├── cpyconverter/          # 中文 -> 拼音（go-ego/gpy）+ 多音字 / gse 词典
 │   ├── japconverter/          # 拼音 -> 假名，以及非中文 -> 假名
 │   ├── language/              # 文本分块与中文判定
 │   ├── process/               # 一些小的公共辅助函数

@@ -63,6 +63,12 @@ func TestToKana(t *testing.T) {
 // TestWithCpyConverter tests the converting of chinese to kana with polyphonics
 func TestWithCpyConverter(t *testing.T) {
 	t.Parallel()
+	err := cpyconverter.InitGSEDict(
+		"./testdata/dict.txt",
+	)
+	if err != nil {
+		t.Error(err)
+	}
 	data := map[string]string{
 		"都会区": "dū huì qū",
 	}

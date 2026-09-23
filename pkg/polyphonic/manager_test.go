@@ -11,6 +11,12 @@ import (
 // TestManager tests functions related to manager
 func TestManager(t *testing.T) {
 	t.Parallel()
+	err := cpyconverter.InitGSEDict(
+		"./testdata/dict.txt",
+	)
+	if err != nil {
+		t.Error(err)
+	}
 	tmpDir := t.TempDir()
 	fileName1 := fmt.Sprintf(
 		"%s/%s",
@@ -33,7 +39,7 @@ func TestManager(t *testing.T) {
 	newManager.SetTargetFile(
 		fileName1,
 	)
-	err := newManager.Save()
+	err = newManager.Save()
 	if err != nil {
 		t.Error(err)
 	}
@@ -56,6 +62,12 @@ func TestManager(t *testing.T) {
 // TestLoadMultiples tests the loading for polyphonics
 func TestLoadMultiples(t *testing.T) {
 	t.Parallel()
+	err := cpyconverter.InitGSEDict(
+		"./testdata/dict.txt",
+	)
+	if err != nil {
+		t.Error(err)
+	}
 	newManager := NewManager()
 	newManager.AddPolyphonic(
 		"都会区",

@@ -39,6 +39,8 @@ Hello!               ->  ヘロー！
 - **Polyphonic (heteronym) words**: register custom pinyin for words with an irregular
   pronunciation (e.g. `都会区`), either from a plain `map[string]string` or from a JSON
   file via the `Manager`.
+- **Custom gse dictionaries**: load your own [gse](https://github.com/go-ego/gse)
+  dictionary so the segmenter recognises words specific to your corpus.
 - **Thread-safe** map loading and `Manager` access.
 
 ## How it works
@@ -61,7 +63,8 @@ SeparateToChunks ......... split into Chinese / non-Chinese runs
    fully Chinese (matched by `^[\u4e00-\u9fa5\u3007]+$`) or not.
 2. Each Chinese chunk is converted to pinyin with `cpyconverter.ToPinyin`. Tones are
    stripped because they do not affect the kana output. Any user-supplied heteronym
-   dictionary is merged into `gpy`'s phrase dictionary first.
+   dictionary is merged into `gpy`'s phrase dictionary first, and an optional
+   [custom gse dictionary](#custom-gse-dictionary) can steer how the text is segmented.
 3. Each pinyin syllable is looked up in `table.PinyinToJapMap`. If it is missing, the
    syllable is matched against `table.InitialToKana` and `table.FinalToKana`
    (longest match first, see `table.SortStringSlice`).
@@ -214,6 +217,37 @@ The JSON file written by `Save` looks like this:
 > **Note:** `Manager` embeds a `sync.RWMutex`, so `NewManager`, `NewManagerFromFile`,
 > `GetData` and the other methods are safe for concurrent use.
 
+## Custom gse dictionary
+
+Phrase-level pinyin is resolved by `go-ego/gpy` *after* the text has been segmented by
+[gse](https://github.com/go-ego/gse). You can load your own gse dictionary so the
+segmenter knows about words that are specific to your corpus:
+
+```go
+import "github.com/yukumo-group/Chinese2KanaConverter/pkg/converter"
+
+// Accepts one or more gse dictionary files.
+if err := converter.InitGSEDict("my-dict.txt"); err != nil {
+	panic(err)
+}
+```
+
+Every line of the file is a gse entry `word frequency [part-of-speech]`. The bundled
+example `internal/cpyconverter/testdata/dict.txt` holds a single entry:
+
+```
+都会区 100 n
+```
+
+Things to keep in mind:
+
+- The dictionary only influences **segmentation**. The pinyin of a segmented word still has
+  to be known to `gpy`, either from its built-in phrase dictionary or from a registered
+  [heteronym](#polyphonic-heteronym-words). Otherwise the word falls back to per-character
+  readings.
+- `InitGSEDict` accepts several files at once, so a base dictionary and your own can be
+  loaded in a single call.
+
 ## Pronunciation model
 
 The output is an *approximation* of Chinese using Japanese phonology, not an exact
@@ -283,6 +317,7 @@ calling `OthersToKana` directly gives:
 | Package | Symbol | Description |
 | --- | --- | --- |
 | `pkg/converter` | `SingleChinesePieceToKana(chineseText string, useHeteronym bool) (string, error)` | Converts a piece of text to kana. The main entry point. |
+| `pkg/converter` | `InitGSEDict(paths ...string) error` | Loads one or more custom gse dictionary files used for word segmentation. |
 | `pkg/polyphonic` | `LoadPolyphonics(map[string]string)` | Registers a heteronym dictionary with the converter. |
 | `pkg/polyphonic` | `SafeLoadPolyphonics(map[string]string)` | Same as above, guarded by a mutex for concurrent callers. |
 | `pkg/polyphonic` | `NewManager() *Manager` | Creates an in-memory heteronym manager. |
@@ -302,7 +337,7 @@ Packages under `internal/` are implementation details and are not part of the pu
 ├── go.mod                     # module github.com/yukumo-group/Chinese2KanaConverter
 ├── .goreleaser.yml            # GoReleaser config for tagged releases
 ├── internal/
-│   ├── cpyconverter/          # Chinese -> pinyin (go-ego/gpy) + heteronym dictionary
+│   ├── cpyconverter/          # Chinese -> pinyin (go-ego/gpy), heteronym + gse dicts
 │   ├── japconverter/          # pinyin -> kana, and non-Chinese -> kana
 │   ├── language/              # text chunking and Chinese detection
 │   ├── process/               # small shared helpers

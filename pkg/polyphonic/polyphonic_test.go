@@ -10,6 +10,12 @@ import (
 // TestLoad tests the loading of heteronym dict
 func TestLoad(t *testing.T) {
 	t.Parallel()
+	err := cpyconverter.InitGSEDict(
+		"./testdata/dict.txt",
+	)
+	if err != nil {
+		t.Error(err)
+	}
 	data := map[string]string{
 		"都会区": "du hui qu",
 	}
@@ -40,6 +46,12 @@ func TestLoad(t *testing.T) {
 
 // TestSafeLoad tests the safe loading
 func TestSafeLoad(t *testing.T) {
+	err := cpyconverter.InitGSEDict(
+		"./testdata/dict.txt",
+	)
+	if err != nil {
+		t.Error(err)
+	}
 	resultChan := make(chan int, 2)
 	data := map[string]string{
 		"都会区": "du hui qu",

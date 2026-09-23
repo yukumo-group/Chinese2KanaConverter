@@ -3,12 +3,19 @@ package converter
 import (
 	"testing"
 
+	"github.com/yukumo-group/Chinese2KanaConverter/internal/cpyconverter"
 	"github.com/yukumo-group/Chinese2KanaConverter/pkg/polyphonic"
 )
 
 // TestWithManager tests the converter with manager
 func TestWithManager(t *testing.T) {
 	t.Parallel()
+	err := cpyconverter.InitGSEDict(
+		"./testdata/dict.txt",
+	)
+	if err != nil {
+		t.Error(err)
+	}
 	newManager := polyphonic.NewManager()
 	newManager.AddPolyphonic(
 		"都会区",
