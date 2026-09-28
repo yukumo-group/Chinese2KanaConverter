@@ -14,6 +14,7 @@ type Manager struct {
 	sync.RWMutex
 	Heteronym      map[string]string `json:"heteronym"`
 	targetFilePath string
+	dictPath       string
 }
 
 // NewManager creates new manager
@@ -27,27 +28,82 @@ func NewManager() *Manager {
 // NewManagerFromFile creates new manager through reading .json file
 func NewManagerFromFile(
 	targetFilePath string,
+	targetDictPath string,
 ) (*Manager, error) {
 	var newManager *Manager
-	data, err := os.ReadFile(targetFilePath)
-	if err != nil {
-		return nil, err
+	_, err := os.Stat(targetFilePath)
+	if err == nil {
+		data, err := os.ReadFile(targetFilePath)
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(data, &newManager)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		if os.IsNotExist(err) {
+			newManager = NewManager()
+			jsonData, err := json.Marshal(
+				newManager,
+			)
+			if err != nil {
+				return nil, err
+			}
+			err = os.WriteFile(
+				targetFilePath,
+				jsonData,
+				0644,
+			)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
 	}
-	err = json.Unmarshal(data, &newManager)
+	_, err = os.Stat(targetDictPath)
 	if err != nil {
-		return nil, err
+		if os.IsNotExist(err) {
+			err = WriteDict(
+				newManager.GetData(),
+				targetDictPath,
+			)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
 	}
+	err = cpyconverter.InitGSEDict(
+		targetDictPath,
+	)
 	newManager.targetFilePath = targetFilePath
+	newManager.dictPath = targetDictPath
 	return newManager, nil
 }
 
 // SetTargetFile sets target file for storing polyphonics
 func (manager *Manager) SetTargetFile(
 	targetFilePath string,
+	targetDictPath string,
 ) {
 	manager.Lock()
 	defer manager.Unlock()
 	manager.targetFilePath = targetFilePath
+	manager.dictPath = targetDictPath
+}
+
+// SaveGSEDict saves gse dict for splitting chinese
+func (manager *Manager) SaveGSEDict() error {
+	manager.Lock()
+	defer manager.Unlock()
+	err := WriteDict(
+		manager.Heteronym,
+		manager.dictPath,
+	)
+	return err
 }
 
 // Save saves the file
