@@ -40,7 +40,8 @@ Hello!               ->  ヘロー！
   pronunciation (e.g. `都会区`), either from a plain `map[string]string` or from a JSON
   file via the `Manager`.
 - **Custom gse dictionaries**: load your own [gse](https://github.com/go-ego/gse)
-  dictionary so the segmenter recognises words specific to your corpus.
+  dictionary — or generate one from your polyphonic map — so the segmenter recognises the
+  words that matter for your corpus.
 - **Thread-safe** map loading and `Manager` access.
 
 ## How it works
@@ -186,14 +187,18 @@ func main() {
 	// Add a word; it becomes available to the converter immediately.
 	manager.AddPolyphonic("都会区", "du hui qu")
 
-	// Persist to disk...
-	manager.SetTargetFile("polyphonic.json")
+	// The manager persists two files: the heteronyms as JSON, and a generated gse
+	// dictionary used to segment the text.
+	manager.SetTargetFile("polyphonic.json", "polyphonic.dict.txt")
 	if err := manager.Save(); err != nil {
 		panic(err)
 	}
+	if err := manager.SaveGSEDict(); err != nil {
+		panic(err)
+	}
 
-	// ...and load it back later.
-	loaded, err := polyphonic.NewManagerFromFile("polyphonic.json")
+	// ...and load both back later. The gse dictionary is registered automatically.
+	loaded, err := polyphonic.NewManagerFromFile("polyphonic.json", "polyphonic.dict.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -220,8 +225,19 @@ The JSON file written by `Save` looks like this:
 ## Custom gse dictionary
 
 Phrase-level pinyin is resolved by `go-ego/gpy` *after* the text has been segmented by
-[gse](https://github.com/go-ego/gse). You can load your own gse dictionary so the
-segmenter knows about words that are specific to your corpus:
+[gse](https://github.com/go-ego/gse). Every line of a gse dictionary is an entry
+`word frequency [part-of-speech]`, for example:
+
+```
+都会区 100 n
+```
+
+Such a dictionary only influences **segmentation**: the pinyin of a segmented word still has
+to be known to `gpy`, either from its built-in phrase dictionary or from a registered
+[heteronym](#polyphonic-heteronym-words). Otherwise the word falls back to per-character
+readings.
+
+### Loading a gse dictionary
 
 ```go
 import "github.com/yukumo-group/Chinese2KanaConverter/pkg/converter"
@@ -232,21 +248,55 @@ if err := converter.InitGSEDict("my-dict.txt"); err != nil {
 }
 ```
 
-Every line of the file is a gse entry `word frequency [part-of-speech]`. The bundled
-example `internal/cpyconverter/testdata/dict.txt` holds a single entry:
+`InitGSEDict` accepts several files at once, so a base dictionary and your own can be
+loaded in a single call.
+
+### Writing a gse dictionary
+
+A gse dictionary can be generated from a polyphonic map, so the same words you registered
+are also the words the segmenter recognises:
+
+```go
+import "github.com/yukumo-group/Chinese2KanaConverter/pkg/polyphonic"
+
+polyphonics := map[string]string{
+	"都会区": "du hui qu",
+	"西雅图": "xi ya tu",
+}
+
+// Write a standalone gse dictionary file.
+if err := polyphonic.WriteDict(polyphonics, "polyphonic.dict.txt"); err != nil {
+	panic(err)
+}
+```
+
+`WriteDict` writes only the **Chinese words** (the pinyin stays in the JSON heteronym file),
+with a fixed frequency of `100` and the part-of-speech `n`. For the map above the generated
+file is:
 
 ```
 都会区 100 n
+西雅图 100 n
 ```
 
-Things to keep in mind:
+When everything is driven through a `Manager`, call `SaveGSEDict` instead. It writes the
+dictionary to the path previously handed to `SetTargetFile`:
 
-- The dictionary only influences **segmentation**. The pinyin of a segmented word still has
-  to be known to `gpy`, either from its built-in phrase dictionary or from a registered
-  [heteronym](#polyphonic-heteronym-words). Otherwise the word falls back to per-character
-  readings.
-- `InitGSEDict` accepts several files at once, so a base dictionary and your own can be
-  loaded in a single call.
+```go
+manager.SetTargetFile("polyphonic.json", "polyphonic.dict.txt")
+
+if err := manager.Save(); err != nil { // heteronyms -> JSON
+	panic(err)
+}
+if err := manager.SaveGSEDict(); err != nil { // words -> gse dictionary
+	panic(err)
+}
+```
+
+> **Note:** `NewManager` already defaults to `polyphonic.json` and `dict.txt`, so
+> `SetTargetFile` is only needed when you want other paths. `NewManagerFromFile` creates the
+> JSON file and the gse dictionary when they do not exist yet, and registers the dictionary
+> with the converter for you.
 
 ## Pronunciation model
 
@@ -320,11 +370,13 @@ calling `OthersToKana` directly gives:
 | `pkg/converter` | `InitGSEDict(paths ...string) error` | Loads one or more custom gse dictionary files used for word segmentation. |
 | `pkg/polyphonic` | `LoadPolyphonics(map[string]string)` | Registers a heteronym dictionary with the converter. |
 | `pkg/polyphonic` | `SafeLoadPolyphonics(map[string]string)` | Same as above, guarded by a mutex for concurrent callers. |
-| `pkg/polyphonic` | `NewManager() *Manager` | Creates an in-memory heteronym manager. |
-| `pkg/polyphonic` | `NewManagerFromFile(path string) (*Manager, error)` | Loads a manager from a JSON file. |
+| `pkg/polyphonic` | `NewManager() *Manager` | Creates an in-memory heteronym manager. Defaults to `polyphonic.json` and `dict.txt`. |
+| `pkg/polyphonic` | `NewManagerFromFile(targetFilePath, targetDictPath string) (*Manager, error)` | Loads a manager from a JSON file and registers the gse dictionary. |
 | `pkg/polyphonic` | `(*Manager).AddPolyphonic(chinese, pinyin string)` | Adds or overwrites one heteronym. |
-| `pkg/polyphonic` | `(*Manager).SetTargetFile(path string)` | Sets the file used by `Save`. |
-| `pkg/polyphonic` | `(*Manager).Save() error` | Writes the manager to its target file as JSON. |
+| `pkg/polyphonic` | `(*Manager).SetTargetFile(targetFilePath, targetDictPath string)` | Sets the JSON file and the gse dictionary used by `Save` / `SaveGSEDict`. |
+| `pkg/polyphonic` | `(*Manager).Save() error` | Writes the manager to its target file as JSON (default `polyphonic.json`). |
+| `pkg/polyphonic` | `(*Manager).SaveGSEDict() error` | Writes the heteronyms out as a gse dictionary file (default `dict.txt`). |
+| `pkg/polyphonic` | `WriteDict(polyphonics map[string]string, targetFilePath string) error` | Writes a gse dictionary file from a Chinese -> pinyin map. |
 | `pkg/polyphonic` | `(*Manager).GetData() map[string]string` | Returns a copy of the heteronym map. |
 | `pkg/polyphonic` | `(*Manager).Initialize()` | Registers every stored heteronym with the converter. |
 

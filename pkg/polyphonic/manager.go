@@ -22,6 +22,7 @@ func NewManager() *Manager {
 	return &Manager{
 		Heteronym:      make(map[string]string),
 		targetFilePath: "polyphonic.json",
+		dictPath:       "dict.txt",
 	}
 }
 

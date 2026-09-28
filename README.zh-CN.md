@@ -32,8 +32,8 @@ Hello!               ->  ヘロー！
   [English2KanaTransliteration](https://github.com/Luigi-Pizzolito/English2KanaTransliteration) 音译。
 - **多音字（异读词）**：可为读音不规则的词（如 `都会区`）登记自定义拼音，既支持直接传入
   `map[string]string`，也支持通过 `Manager` 读写 JSON 文件。
-- **自定义 gse 词典**：加载你自己的 [gse](https://github.com/go-ego/gse) 词典，让分词器
-  认识你语料中特有的词。
+- **自定义 gse 词典**：加载你自己的 [gse](https://github.com/go-ego/gse) 词典（也可由多音字
+  映射自动生成），让分词器认识你语料中特有的词。
 - **并发安全**的字典加载与 `Manager` 访问。
 
 ## 工作原理
@@ -175,14 +175,17 @@ func main() {
 	// 新增一个词，立即对转换器生效。
 	manager.AddPolyphonic("都会区", "du hui qu")
 
-	// 写入磁盘……
-	manager.SetTargetFile("polyphonic.json")
+	// Manager 会持久化两个文件：多音字的 JSON，以及用于分词的 gse 词典。
+	manager.SetTargetFile("polyphonic.json", "polyphonic.dict.txt")
 	if err := manager.Save(); err != nil {
 		panic(err)
 	}
+	if err := manager.SaveGSEDict(); err != nil {
+		panic(err)
+	}
 
-	// ……之后读回来。
-	loaded, err := polyphonic.NewManagerFromFile("polyphonic.json")
+	// ……之后把两者读回来。gse 词典会被自动登记。
+	loaded, err := polyphonic.NewManagerFromFile("polyphonic.json", "polyphonic.dict.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -209,7 +212,16 @@ func main() {
 ## 自定义 gse 词典
 
 短语级拼音由 `go-ego/gpy` 在文本经过 [gse](https://github.com/go-ego/gse) **分词**之后决定。
-你可以加载自己的 gse 词典，让分词器认识你语料中特有的词：
+gse 词典每行是一条词条 `词 词频 [词性]`，例如：
+
+```
+都会区 100 n
+```
+
+该词典只影响**分词**：被切分出来的词，其拼音仍需 `gpy` 已知——来自它内置的短语词典，或来自
+已登记的[多音字](#多音字异读词)。否则该词会退化为逐字读音。
+
+### 加载 gse 词典
 
 ```go
 import "github.com/yukumo-group/Chinese2KanaConverter/pkg/converter"
@@ -220,18 +232,50 @@ if err := converter.InitGSEDict("my-dict.txt"); err != nil {
 }
 ```
 
-词典文件每行是一条 gse 词条：`词 词频 [词性]`。仓库自带的示例
-`internal/cpyconverter/testdata/dict.txt` 只有一条：
+`InitGSEDict` 支持一次传入多个文件，因此可以一次性加载基础词典和你自己的词典。
+
+### 编写 gse 词典
+
+gse 词典可以由多音字映射**自动生成**，这样你登记过的词同时也是分词器能识别的词：
+
+```go
+import "github.com/yukumo-group/Chinese2KanaConverter/pkg/polyphonic"
+
+polyphonics := map[string]string{
+	"都会区": "du hui qu",
+	"西雅图": "xi ya tu",
+}
+
+// 写出一个独立的 gse 词典文件。
+if err := polyphonic.WriteDict(polyphonics, "polyphonic.dict.txt"); err != nil {
+	panic(err)
+}
+```
+
+`WriteDict` **只写中文词**（拼音留在 JSON 多音字文件里），词频固定为 `100`、词性为 `n`。
+上面的映射生成的文件是：
 
 ```
 都会区 100 n
+西雅图 100 n
 ```
 
-需要注意：
+若全部通过 `Manager` 管理，则改用 `SaveGSEDict`。它会写到之前交给 `SetTargetFile` 的路径：
 
-- 该词典只影响**分词**。被切分出来的词，其拼音仍需 `gpy` 已知——来自它内置的短语词典，或来自
-  已登记的[多音字](#多音字异读词)。否则该词会退化为逐字读音。
-- `InitGSEDict` 支持一次传入多个文件，因此可以一次性加载基础词典和你自己的词典。
+```go
+manager.SetTargetFile("polyphonic.json", "polyphonic.dict.txt")
+
+if err := manager.Save(); err != nil { // 多音字 -> JSON
+	panic(err)
+}
+if err := manager.SaveGSEDict(); err != nil { // 词条 -> gse 词典
+	panic(err)
+}
+```
+
+> **说明：** `NewManager` 默认使用 `polyphonic.json` 与 `dict.txt`，因此只有需要其它路径时
+> 才要调用 `SetTargetFile`。当 JSON 文件或 gse 词典不存在时，`NewManagerFromFile` 会自动
+> 创建它们，并替你把词典登记到转换器。
 
 ## 发音模型
 
@@ -298,11 +342,13 @@ if err := converter.InitGSEDict("my-dict.txt"); err != nil {
 | `pkg/converter` | `InitGSEDict(paths ...string) error` | 加载一个或多个自定义 gse 词典文件，用于分词。 |
 | `pkg/polyphonic` | `LoadPolyphonics(map[string]string)` | 向转换器登记一个多音字词典。 |
 | `pkg/polyphonic` | `SafeLoadPolyphonics(map[string]string)` | 同上，但带互斥锁，供并发调用者使用。 |
-| `pkg/polyphonic` | `NewManager() *Manager` | 创建一个内存版多音字管理器。 |
-| `pkg/polyphonic` | `NewManagerFromFile(path string) (*Manager, error)` | 从 JSON 文件加载管理器。 |
+| `pkg/polyphonic` | `NewManager() *Manager` | 创建一个内存版多音字管理器。默认文件为 `polyphonic.json` 与 `dict.txt`。 |
+| `pkg/polyphonic` | `NewManagerFromFile(targetFilePath, targetDictPath string) (*Manager, error)` | 从 JSON 文件加载管理器，并登记 gse 词典。 |
 | `pkg/polyphonic` | `(*Manager).AddPolyphonic(chinese, pinyin string)` | 新增或覆盖一个多音字。 |
-| `pkg/polyphonic` | `(*Manager).SetTargetFile(path string)` | 设置 `Save` 使用的目标文件。 |
-| `pkg/polyphonic` | `(*Manager).Save() error` | 以 JSON 形式把管理器写入目标文件。 |
+| `pkg/polyphonic` | `(*Manager).SetTargetFile(targetFilePath, targetDictPath string)` | 设置 `Save` / `SaveGSEDict` 使用的 JSON 文件与 gse 词典。 |
+| `pkg/polyphonic` | `(*Manager).Save() error` | 以 JSON 形式把管理器写入目标文件（默认 `polyphonic.json`）。 |
+| `pkg/polyphonic` | `(*Manager).SaveGSEDict() error` | 把多音字写出为 gse 词典文件（默认 `dict.txt`）。 |
+| `pkg/polyphonic` | `WriteDict(polyphonics map[string]string, targetFilePath string) error` | 由中文 -> 拼音映射写出 gse 词典文件。 |
 | `pkg/polyphonic` | `(*Manager).GetData() map[string]string` | 返回多音字映射的副本。 |
 | `pkg/polyphonic` | `(*Manager).Initialize()` | 把保存的所有多音字登记到转换器。 |
 
