@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/yukumo-group/Chinese2KanaConverter/internal/cpyconverter"
+	"github.com/yukumo-group/Chinese2KanaConverter/pkg/converter"
 )
 
 // TestManager tests functions related to manager
@@ -216,5 +217,57 @@ func TestTotalNewManager(t *testing.T) {
 	)
 	if err != nil {
 		t.Error(err)
+	}
+}
+
+// TestChineseConvert tests the converting
+func TestChineseConvert(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	targetFilePath := fmt.Sprintf(
+		"%s/%s",
+		tmpDir,
+		"test.json",
+	)
+	dictFilePath := fmt.Sprintf(
+		"%s/%s",
+		tmpDir,
+		"test.txt",
+	)
+	newPolyphonicManager, err := NewManagerFromFile(
+		targetFilePath,
+		dictFilePath,
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	newPolyphonicManager.AddPolyphonic(
+		"都市",
+		"du shi",
+	)
+	newPolyphonicManager.AddPolyphonic(
+		"银行",
+		"yin hang",
+	)
+	err = newPolyphonicManager.SaveGSEDict()
+	if err != nil {
+		t.Error(err)
+	}
+	result, err := converter.SingleChinesePieceToKana(
+		"都市银行",
+		true,
+	)
+	if err != nil {
+		t.Error(
+			err,
+		)
+	}
+	const expecteResult string = "トゥーシーインハン"
+	if result != expecteResult {
+		t.Errorf(
+			"expected %s, got %s",
+			expecteResult,
+			result,
+		)
 	}
 }

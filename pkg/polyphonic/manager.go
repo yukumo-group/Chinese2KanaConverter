@@ -104,6 +104,9 @@ func (manager *Manager) SaveGSEDict() error {
 		manager.Heteronym,
 		manager.dictPath,
 	)
+	err = cpyconverter.InitGSEDict(
+		manager.dictPath,
+	)
 	return err
 }
 
