@@ -2,6 +2,7 @@ package polyphonic
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -180,5 +181,40 @@ func TestWithDict(t *testing.T) {
 				py,
 			)
 		}
+	}
+}
+
+// TestTotalNewManager tests loading of new manager
+func TestTotalNewManager(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	fileName1 := fmt.Sprintf(
+		"%s/%s",
+		tmpDir,
+		"114.json",
+	)
+	dictName := fmt.Sprintf(
+		"%s/%s",
+		tmpDir,
+		"dict.txt",
+	)
+	_, err := NewManagerFromFile(
+		fileName1,
+		dictName,
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = os.Stat(
+		fileName1,
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = os.Stat(
+		dictName,
+	)
+	if err != nil {
+		t.Error(err)
 	}
 }
