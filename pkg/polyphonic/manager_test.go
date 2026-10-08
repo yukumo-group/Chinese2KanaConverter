@@ -271,3 +271,8 @@ func TestChineseConvert(t *testing.T) {
 		)
 	}
 }
+
+// TestPolyphonicsCRUD tests the crud function of polyphonics
+func TestPolyphonicsCRUD(t *testing.T) {
+	t.Parallel()
+}

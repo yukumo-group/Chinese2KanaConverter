@@ -1,6 +1,6 @@
 # Chinese2KanaConverter
 
-[English](./README.md) | **简体中文**
+[English](./README.md) | **简体中文** | [日本語](./README.ja-JP.md)
 
 [![Go Test Workflow](https://github.com/yukumo-group/Chinese2KanaConverter/actions/workflows/test.yaml/badge.svg)](https://github.com/yukumo-group/Chinese2KanaConverter/actions/workflows/test.yaml)
 [![Go Version](https://img.shields.io/badge/go-1.25.0-00ADD8.svg)](https://go.dev/)

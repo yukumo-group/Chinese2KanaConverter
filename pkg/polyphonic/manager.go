@@ -2,6 +2,7 @@ package polyphonic
 
 import (
 	"encoding/json"
+	"fmt"
 	"maps"
 	"os"
 	"sync"
@@ -161,4 +162,21 @@ func (manager *Manager) GetData() map[string]string {
 	defer manager.RUnlock()
 	result := maps.Clone(manager.Heteronym)
 	return result
+}
+
+// DeletePolyphonic deletes one pair of polyphonic
+func (manager *Manager) DeletePolyphonic(
+	chinese string,
+) error {
+	manager.Lock()
+	defer manager.Unlock()
+	_, exists := manager.Heteronym[chinese]
+	if !exists {
+		return fmt.Errorf(
+			"%s does not exxists in the list of polyphonics",
+			chinese,
+		)
+	}
+	delete(manager.Heteronym, chinese)
+	return nil
 }
